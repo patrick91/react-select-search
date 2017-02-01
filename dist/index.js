@@ -85,20 +85,9 @@ var Component = function (_React$Component) {
 
         var options = props.options;
         var value = !props.value && props.multiple ? [] : props.value;
-        var search = '';
-
-        if (value) {
-            var option = _this.findByValue(options, value);
-
-            if (option) {
-                search = option.name;
-            }
-        }
-
-        _this.placeSelectedFirst(options, value);
 
         _this.state = {
-            search: search,
+            search: '',
             value: value,
             defaultOptions: props.options,
             options: options,
@@ -106,12 +95,23 @@ var Component = function (_React$Component) {
             focus: false
         };
 
+        if (value) {
+            var option = _this.findByValue(options, value);
+
+            if (option) {
+                _this.state.search = option.name;
+            }
+        }
+
+        _this.placeSelectedFirst(options, value);
+
         _this.classes = {
             container: _this.props.multiple ? _this.props.className + ' ' + _Bem2.default.m(_this.props.className, 'multiple') : _this.props.className,
             search: _Bem2.default.e(_this.props.className, 'search'),
             select: _Bem2.default.e(_this.props.className, 'select'),
             options: _Bem2.default.e(_this.props.className, 'options'),
             option: _Bem2.default.e(_this.props.className, 'option'),
+            heading: _Bem2.default.e(_this.props.className, 'heading'),
             out: _Bem2.default.e(_this.props.className, 'out'),
             label: _Bem2.default.e(_this.props.className, 'label'),
             focus: _this.props.multiple ? _this.props.className + ' ' + _Bem2.default.m(_this.props.className, 'multiple focus') : _this.props.className + ' ' + _Bem2.default.m(_this.props.className, 'focus')
@@ -581,6 +581,7 @@ var Component = function (_React$Component) {
             if (foundOptions && foundOptions.length > 0) {
                 foundOptions.forEach(function (element, i) {
                     var className = _this5.classes.option;
+                    var onClick = null;
 
                     if (_this5.state.highlighted === i) {
                         className += ' ' + _Bem2.default.m(_this5.classes.option, 'hover');
@@ -590,35 +591,34 @@ var Component = function (_React$Component) {
                         className += ' ' + _Bem2.default.m(_this5.classes.option, 'selected');
                     }
 
-                    if (_this5.props.multiple) {
-                        if (_this5.state.value.indexOf(element.value) < 0) {
-                            options.push(_react2.default.createElement(
-                                'li',
-                                { className: className, onClick: _this5.chooseOption.bind(_this5, element.value), key: element.value + '-option', 'data-value': element.value },
-                                _this5.props.renderOption(element, _this5.state, _this5.props)
-                            ));
-                        } else {
-                            options.push(_react2.default.createElement(
-                                'li',
-                                { className: className, onClick: _this5.removeOption.bind(_this5, element.value), key: element.value + '-option', 'data-value': element.value },
-                                _this5.props.renderOption(element, _this5.state, _this5.props)
-                            ));
-                        }
+                    if (element.type && element.type === 'heading') {
+                        className = _this5.classes.heading;
                     } else {
-                        if (element.value === _this5.state.value) {
-                            options.push(_react2.default.createElement(
-                                'li',
-                                { className: className, key: element.value + '-option', 'data-value': element.value },
-                                _this5.props.renderOption(element)
-                            ));
+                        if (_this5.props.multiple) {
+                            if (_this5.state.value.indexOf(element.value) < 0) {
+                                onClick = _this5.chooseOption.bind(_this5, element.value);
+                            } else {
+                                onClick = _this5.removeOption.bind(_this5, element.value);
+                            }
                         } else {
-                            options.push(_react2.default.createElement(
-                                'li',
-                                { className: className, onClick: _this5.chooseOption.bind(_this5, element.value), key: element.value + '-option', 'data-value': element.value },
-                                _this5.props.renderOption(element, _this5.state, _this5.props)
-                            ));
+                            if (element.value !== _this5.state.value) {
+                                onClick = _this5.chooseOption.bind(_this5, element.value);
+                            }
                         }
                     }
+
+                    var li = _react2.default.createElement(
+                        'li',
+                        {
+                            className: className,
+                            onClick: onClick,
+                            key: element.value + '-option',
+                            'data-value': element.value
+                        },
+                        _this5.props.renderOption(element, _this5.state, _this5.props)
+                    );
+
+                    options.push(li);
                 });
 
                 if (options.length > 0) {
