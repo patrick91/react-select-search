@@ -46,6 +46,7 @@ var propTypes = {
     onBlur: _react2.default.PropTypes.func.isRequired,
     onFocus: _react2.default.PropTypes.func.isRequired,
     renderOption: _react2.default.PropTypes.func.isRequired,
+    renderHeading: _react2.default.PropTypes.func.isRequired,
     value: _react2.default.PropTypes.oneOfType([_react2.default.PropTypes.string, _react2.default.PropTypes.array])
 };
 
@@ -64,6 +65,9 @@ var defaultProps = {
     onFocus: function onFocus() {},
     onChange: function onChange() {},
     renderOption: function renderOption(option) {
+        return option.name;
+    },
+    renderHeading: function renderHeading(option) {
         return option.name;
     },
     fuse: {
@@ -111,7 +115,7 @@ var Component = function (_React$Component) {
             select: _Bem2.default.e(_this.props.className, 'select'),
             options: _Bem2.default.e(_this.props.className, 'options'),
             option: _Bem2.default.e(_this.props.className, 'option'),
-            heading: _Bem2.default.e(_this.props.className, 'heading'),
+            group: _Bem2.default.e(_this.props.className, 'group'),
             out: _Bem2.default.e(_this.props.className, 'out'),
             label: _Bem2.default.e(_this.props.className, 'label'),
             focus: _this.props.multiple ? _this.props.className + ' ' + _Bem2.default.m(_this.props.className, 'multiple focus') : _this.props.className + ' ' + _Bem2.default.m(_this.props.className, 'focus')
@@ -415,7 +419,7 @@ var Component = function (_React$Component) {
     }, {
         key: 'findByValue',
         value: function findByValue(source, value) {
-            if (!source || source.length < 1) {
+            if (!source) {
                 source = this.state.defaultOptions;
             }
 
@@ -423,9 +427,38 @@ var Component = function (_React$Component) {
                 return null;
             }
 
-            return source.filter(function (object) {
-                return object.value === value;
-            })[0];
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
+
+            try {
+                for (var _iterator = source[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var object = _step.value;
+
+                    if (object.type === 'group') {
+                        var result = this.findByValue(object.items, value);
+
+                        if (result) {
+                            return result;
+                        }
+                    } else if (object.value === value) {
+                        return object;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError = true;
+                _iteratorError = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion && _iterator.return) {
+                        _iterator.return();
+                    }
+                } finally {
+                    if (_didIteratorError) {
+                        throw _iteratorError;
+                    }
+                }
+            }
         }
     }, {
         key: 'toggle',
@@ -570,13 +603,12 @@ var Component = function (_React$Component) {
         value: function renderOption() {}
     }, {
         key: 'renderOptions',
-        value: function renderOptions() {
+        value: function renderOptions(items) {
             var _this5 = this;
 
             var select = null;
             var options = [];
-            var selectStyle = {};
-            var foundOptions = this.state.options;
+            var foundOptions = items || this.state.options;
 
             if (foundOptions && foundOptions.length > 0) {
                 foundOptions.forEach(function (element, i) {
@@ -591,9 +623,17 @@ var Component = function (_React$Component) {
                         className += ' ' + _Bem2.default.m(_this5.classes.option, 'selected');
                     }
 
-                    if (element.type && element.type === 'heading') {
-                        className = _this5.classes.heading;
+                    var content = void 0;
+                    var extra = void 0;
+
+                    if (element.type && element.type === 'group') {
+                        className = _this5.classes.group;
+
+                        content = _this5.props.renderHeading(element, _this5.state, _this5.props);
+                        extra = _this5.renderOptions(element.items);
                     } else {
+                        content = _this5.props.renderOption(element, _this5.state, _this5.props);
+
                         if (_this5.props.multiple) {
                             if (_this5.state.value.indexOf(element.value) < 0) {
                                 onClick = _this5.chooseOption.bind(_this5, element.value);
@@ -615,10 +655,14 @@ var Component = function (_React$Component) {
                             key: element.value + '-option',
                             'data-value': element.value
                         },
-                        _this5.props.renderOption(element, _this5.state, _this5.props)
+                        content
                     );
 
                     options.push(li);
+
+                    if (extra) {
+                        options.push(extra);
+                    }
                 });
 
                 if (options.length > 0) {
@@ -630,11 +674,17 @@ var Component = function (_React$Component) {
                 }
             }
 
+            return select;
+        }
+    }, {
+        key: 'renderSelect',
+        value: function renderSelect() {
+            var selectStyle = {};
+            var className = this.classes.select;
+
             if (this.props.multiple) {
                 selectStyle.height = this.props.height;
             }
-
-            var className = this.classes.select;
 
             if (this.state.focus) {
                 className += ' ' + _Bem2.default.m(this.classes.select, 'display');
@@ -643,7 +693,7 @@ var Component = function (_React$Component) {
             return _react2.default.createElement(
                 'div',
                 { ref: 'select', className: className, style: selectStyle },
-                select
+                this.renderOptions()
             );
         }
     }, {
@@ -744,7 +794,7 @@ var Component = function (_React$Component) {
                 { className: className, ref: 'container' },
                 this.renderOutElement(),
                 this.renderSearchField(),
-                this.renderOptions()
+                this.renderSelect()
             );
         }
     }]);
