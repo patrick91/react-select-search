@@ -19,6 +19,7 @@ const propTypes    = {
     onBlur         : React.PropTypes.func.isRequired,
     onFocus        : React.PropTypes.func.isRequired,
     renderOption   : React.PropTypes.func.isRequired,
+    renderHeading  : React.PropTypes.func.isRequired,
     value          : React.PropTypes.oneOfType([
         React.PropTypes.string,
         React.PropTypes.array
@@ -40,6 +41,9 @@ const defaultProps = {
     onFocus        : function () {},
     onChange       : function () {},
     renderOption   : function (option) {
+        return option.name;
+    },
+    renderHeading  : function (option) {
         return option.name;
     },
     fuse: {
@@ -84,7 +88,7 @@ class Component extends React.Component {
             select    : Bem.e(this.props.className, 'select'),
             options   : Bem.e(this.props.className, 'options'),
             option    : Bem.e(this.props.className, 'option'),
-            heading   : Bem.e(this.props.className, 'heading'),
+            group     : Bem.e(this.props.className, 'group'),
             out       : Bem.e(this.props.className, 'out'),
             label     : Bem.e(this.props.className, 'label'),
             focus     : (this.props.multiple) ? this.props.className + ' ' + Bem.m(this.props.className, 'multiple focus') : this.props.className + ' ' + Bem.m(this.props.className, 'focus')
@@ -354,7 +358,7 @@ class Component extends React.Component {
     }
 
     findByValue(source, value) {
-        if (!source || source.length < 1) {
+        if (!source) {
             source = this.state.defaultOptions;
         }
 
@@ -362,9 +366,17 @@ class Component extends React.Component {
             return null;
         }
 
-        return source.filter(function (object) {
-            return object.value === value;
-        })[0];
+        for (const object of source) {
+            if (object.type === 'group') {
+                const result = this.findByValue(object.items, value);
+
+                if (result) {
+                    return object;
+                }
+            } else if (object.value === value) {
+                return value;
+            }
+        }
     }
 
     toggle() {
@@ -497,11 +509,10 @@ class Component extends React.Component {
 
     }
 
-    renderOptions() {
+    renderOptions(items) {
         let select       = null;
         let options      = [];
-        let selectStyle  = {};
-        let foundOptions = this.state.options;
+        let foundOptions = items || this.state.options;
 
         if (foundOptions && foundOptions.length > 0) {
             foundOptions.forEach((element, i) => {
@@ -516,9 +527,17 @@ class Component extends React.Component {
                     className += ' ' + Bem.m(this.classes.option, 'selected');
                 }
 
-                if (element.type && element.type === 'heading') {
-                    className = this.classes.heading;
+                let content;
+                let extra;
+
+                if (element.type && element.type === 'group') {
+                    className = this.classes.group;
+
+                    content = this.props.renderHeading(element, this.state, this.props);
+                    extra = this.renderOptions(element.items);
                 } else {
+                    content = this.props.renderOption(element, this.state, this.props);
+
                     if (this.props.multiple) {
                         if (this.state.value.indexOf(element.value) < 0) {
                             onClick = this.chooseOption.bind(this, element.value);
@@ -537,9 +556,13 @@ class Component extends React.Component {
                     onClick={onClick}
                     key={element.value + '-option'}
                     data-value={element.value}
-                >{this.props.renderOption(element, this.state, this.props)}</li>
+                >{content}</li>
 
                 options.push(li);
+
+                if (extra) {
+                    options.push(extra);
+                }
             });
 
             if (options.length > 0) {
@@ -551,11 +574,16 @@ class Component extends React.Component {
             }
         }
 
+                return select;
+        }
+
+        renderSelect() {
+        let selectStyle  = {};
+        let className = this.classes.select;
+
         if (this.props.multiple) {
             selectStyle.height = this.props.height;
         }
-
-        let className = this.classes.select;
 
         if (this.state.focus) {
             className += ' ' + Bem.m(this.classes.select, 'display');
@@ -563,7 +591,7 @@ class Component extends React.Component {
 
         return (
             <div ref="select" className={className} style={selectStyle}>
-                {select}
+                {this.renderOptions()}
             </div>
         );
     }
@@ -645,7 +673,7 @@ class Component extends React.Component {
             <div className={className} ref="container">
                 {this.renderOutElement()}
                 {this.renderSearchField()}
-                {this.renderOptions()}
+                {this.renderSelect()}
             </div>
         );
     }
